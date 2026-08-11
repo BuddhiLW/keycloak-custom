@@ -87,8 +87,28 @@ internal/render/  stylesheet, build.json, ConfigMap, CR registration hunk
 internal/verify/  docker-based resolution probe against stock Keycloak
 template/v1/      the stylesheet template (versioned; v1 is stable)
 platform/         the platform-owned ConfigMap — the security boundary
-testdata/golden/  rendered reference output
+testdata/golden/  rendered reference output — one directory per fixture theme
 ```
+
+## Tests
+
+```
+go test ./...
+```
+
+`testdata/golden/<name>/theme.yaml` is an input; `<name>.css` beside it is the
+stylesheet today's renderer must produce from it, byte for byte. A template edit
+that changes any tenant's output fails in CI rather than in the shared instance.
+When the change is intended:
+
+```
+go test ./internal/render -update    # rewrite the goldens, then read the diff
+```
+
+The rest of the suite is the value layer — every CSS-escape, third-party-fetch
+and contrast rejection listed under [docs/theme-yaml.md](docs/theme-yaml.md) has
+a case asserting it stays rejected — plus a round trip proving `new` scaffolds a
+theme that `validate` and `render -check` accept.
 
 ## Scope
 
