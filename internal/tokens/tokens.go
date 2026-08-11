@@ -67,9 +67,10 @@ var (
 	weightRe = regexp.MustCompile(`^[1-9]00$`)
 	// Brand text is embedded in a generated SVG. Restricted to plain word
 	// characters so it cannot inject markup into that SVG or the stylesheet.
-	// The accented ranges are Latin-1 letters minus × and ÷ — a product named
-	// "Funerária Francana" must be spellable, and a letter carries no markup
-	// meaning. Everything structural (<, >, &, ", /) stays out.
+	// The accented ranges are Latin-1 letters minus × and ÷: a brand name is not
+	// restricted to ASCII, and a letter carries no markup
+	// meaning. Everything structural (<, >, &, ", /) stays out. A product named
+	// "Ateliê Lumière" must be spellable.
 	brandRe = regexp.MustCompile(`^[0-9A-Za-zÀ-ÖØ-öø-ÿ .·-]{1,24}$`)
 	// Only Google Fonts is allowed as a remote stylesheet, and only over https.
 	// A login page fetching an arbitrary third-party stylesheet is an injection
@@ -97,9 +98,9 @@ type Palette struct {
 	Accent      string `yaml:"accent"`
 	AccentHover string `yaml:"accent_hover"`
 	// AccentInk is the label colour ON the accent. Optional: when empty it is
-	// DERIVED as white-or-page-ink, whichever reads better. A product with a
-	// deliberate on-accent colour (vtranslate's --mint-ink) can state it, and it
-	// is contrast-checked either way.
+	// DERIVED as white-or-page-ink, whichever reads better. A product whose
+	// design system states a deliberate on-accent ink can set it, and it is
+	// contrast-checked either way.
 	AccentInk string `yaml:"accent_ink"`
 	InputBg   string `yaml:"input_bg"`
 }
@@ -342,6 +343,16 @@ func (t *Theme) applyDefaults() {
 	def(&t.Font.Heading, t.Font.Body)
 	def(&t.Tokens.SurfaceAlt, t.Tokens.Surface)
 	def(&t.Tokens.Dim, t.Tokens.Muted)
+	// The light override gets the same two fallbacks. Without them the block is
+	// asymmetric with the base palette for no reason a tenant can see, and
+	// `kctheme new -scheme dark-first` scaffolds a theme its own validator
+	// rejects. Accent and accent_hover are deliberately NOT defaulted here: one
+	// accent cannot serve both schemes accessibly, so inheriting the dark one
+	// would silently ship a light mode that fails contrast.
+	if t.Light != nil {
+		def(&t.Light.SurfaceAlt, t.Light.Surface)
+		def(&t.Light.Dim, t.Light.Muted)
+	}
 }
 
 // Validate is the whole tenant-facing contract. Everything it rejects is
@@ -504,7 +515,7 @@ func (t *Theme) contrast() []error {
 
 // OnAccent is the primary button's label colour: the explicit accent_ink if the
 // product states one, otherwise white-or-page-ink, whichever reads better.
-// Deriving it removes a token a tenant could get wrong — the retired vtranslate
+// Deriving it removes a token a tenant could get wrong — a retired hand-written
 // theme hard-coded `color: #fff` on an accent scoring 3.16:1 against white, so
 // its primary button label failed WCAG AA in every colour scheme.
 func (t *Theme) OnAccent() string {

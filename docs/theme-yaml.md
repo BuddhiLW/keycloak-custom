@@ -124,8 +124,8 @@ Replaces `keycloak.v2`'s own KEYCLOAK wordmark.
 
 `mark` and `wordmark` are plain text: the lockup is **generated** as an inline SVG and
 embedded in the stylesheet as a `data:` URI, so a tenant ships no binary and needs no
-extra projected key. Accented Latin-1 letters are allowed (a product named *Funerária
-Francana* must be spellable); everything structural (`<`, `>`, `&`, `"`, `/`) is not.
+extra projected key. Accented Latin-1 letters are allowed (a product named *Ateliê
+Lumière* must be spellable); everything structural (`<`, `>`, `&`, `"`, `/`) is not.
 
 ### `brand.logo`
 
@@ -155,11 +155,14 @@ consult; guessing reflows the card when the real file lands.
 ## `light` — only for `scheme: dark-first`
 
 The `prefers-color-scheme: light` override. Same field names as `tokens`, plus
-`gradient_tint`.
+`gradient_tint`. `surface_alt` and `dim` fall back to `surface` and `muted`, exactly as
+they do in the base palette.
 
 `accent`, `accent_hover` and `accent_ink` are repeated here rather than inherited
 because one accent cannot serve both modes accessibly: `#5b8cff` measures 5.39:1 on a
-dark surface and 3.16:1 on white, and every colour that fixes white breaks dark.
+dark surface and 3.16:1 on white, and every colour that fixes white breaks dark. That
+is also why they are not defaulted: inheriting the dark accent would silently ship a
+light mode below WCAG AA.
 
 ---
 

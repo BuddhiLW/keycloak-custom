@@ -279,6 +279,11 @@ func cmdNew(args []string) error {
 	if *scheme == "dark-first" {
 		light = `
 # Only for scheme: dark-first — the prefers-color-scheme: light override.
+#
+# accent and accent_hover are repeated rather than inherited: one accent cannot
+# serve both schemes accessibly. The dark accent above scores 5.39:1 on the dark
+# surface and 3.16:1 on white, so a light mode that inherited it would ship a
+# link colour below WCAG AA.
 light:
   bg: "#f4f6fb"
   surface: "#ffffff"
@@ -286,6 +291,8 @@ light:
   text: "#111629"
   muted: "#5b6580"
   input_bg: "#fbfcff"
+  accent: "#2a5bd7"
+  accent_hover: "#1f47ad"
   gradient_tint: "#e8edfb"
 `
 	}
