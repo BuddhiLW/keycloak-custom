@@ -1,0 +1,63 @@
+# PLATFORM-OWNED. This file is the reason a tenant cannot take down the shared
+# Keycloak.
+#
+# Two independent adversarial reviews built the same total multi-tenant outage
+# from a TENANT-authored theme.properties carrying a second `parent=` line (Java
+# Properties is last-wins): unbounded parent chain, 100% CPU, OutOfMemoryError,
+# JVM Exit=3, kubelet restart, poison still mounted, traffic-driven crashloop of
+# every tenant's auth. Both attack files passed every substring-based admission
+# rule that could be written.
+#
+# The fix is not a better regex. The shared Keycloak CR projects THIS ConfigMap
+# onto login/theme.properties for every tenant, and ConfigMap keys cannot
+# contain "/" while kubelet writes only the keys named in the CR's items[].
+# A tenant therefore has no expression that reaches this path: parent=, styles=,
+# meta= and import= are unreachable, not merely validated.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kc-theme-properties
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/component: keycloak-theme-platform
+data:
+  # `styles` is a plain property OVERRIDE, not an append. Listing only the brand
+  # sheet silently DROPS keycloak.v2's css/styles.css — the bug both retired
+  # stylesheets shipped, each with a comment claiming the opposite. Measured on
+  # 26.6.1: listing both serves css/styles.css (200) and css/theme.css (200).
+  #
+  # `?v=N` is the GLOBAL CACHE EPOCH. Theme resources are served
+  # Cache-Control: max-age=2592000 with no ETag and no Last-Modified, and
+  # /resources/<hash>/ is per-installation and survives restarts, so this query
+  # string is the only thing that busts a returning browser's cache. Bumping N
+  # is a platform action and needs a rolling restart, because theme.properties
+  # is JVM-cached.
+  #
+  # No `locales=` line: omitting it inherits keycloak.v2's full 39-locale list,
+  # strictly better than the hand-written en,pt-BR. Realm-level i18n belongs in
+  # terraform / realm-import.
+  #
+  # parent=keycloak.v2, never `base`. Measured: parent=base does NOT return 500
+  # (it renders a degraded 4942-byte page) — the long-standing claim is false.
+  # The real reason is that brand CSS targets PatternFly v5 selectors that the
+  # base theme never emits.
+  # dark-only and dark-first BOTH map here: they differ only in whether the
+  # generated stylesheet carries a prefers-color-scheme override, which is a
+  # CSS-level distinction the server never sees.
+  dark: |
+    parent=keycloak.v2
+    import=common/keycloak
+    styles=css/styles.css css/theme.css?v=1
+    darkMode=true
+
+  # darkMode=false suppresses keycloak.v2's pf-v5-theme-dark auto-switch script.
+  # Without it a light-first tenant gets PatternFly's dark tokens on form
+  # controls and alerts while its own CSS forces white surfaces — the
+  # mixed-contrast bug every retired light-first stylesheet shipped. Measured:
+  # with darkMode=false the script is absent from that tenant's page and still
+  # present for the dark-first tenant.
+  light: |
+    parent=keycloak.v2
+    import=common/keycloak
+    styles=css/styles.css css/theme.css?v=1
+    darkMode=false

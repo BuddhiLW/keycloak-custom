@@ -1,0 +1,4 @@
+# Built binary. `go build -o build/kctheme ./cmd/kctheme` reproduces it, and
+# kctheme locates template/ and platform/ by walking up from the executable, so
+# build/ inside the checkout is the convenient place to put it — not a release.
+/build/
